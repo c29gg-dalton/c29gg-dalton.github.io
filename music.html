@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title></title>
+	<style type="text/css">
+#everyday{
+width: 400px;
+height: 400px;
+background-image: url(asap2.png);
+background-size: contain;
+display: inline-block;
+margin-left: -20%;
+}
+#could{
+width: 400px;
+height: 400px;
+background-image: url(could.png);
+background-size: contain;
+display: inline-block;
+margin-left: -20%;
+}
+#move{
+width: 400px;
+height: 400px;
+background-image: url(move.png);
+background-size: contain;
+display: inline-block;
+margin-left: -20%;
+}
+#money{
+width: 400px;
+height: 380px;
+background-image: url(money.png);
+background-size: contain;
+display: inline-block;
+margin-left: -20%;
+}
+#saving{
+width: 400px;
+height: 400px;
+background-image: url(saving.png);
+background-size: contain;
+display: inline-block;
+margin-left: -20%;
+}
+#space{
+display: inline-block;
+width: 225px;
+height: 400px;
+}
+#player{
+	width: 500px;
+	height: 500px;
+	background-image: url(record.png);
+		display: inline-block;
+	background-size: cover;
+	background-repeat: no-repeat;
+
+}
+#everyday:hover .could{
+}
+#everyday:hover{
+}
+#could:hover .move{
+}
+#could:hover{
+}
+#move:hover .money{
+
+}
+#move:hover{
+
+}
+#money:hover .saving{
+
+}
+#money:hover{
+}
+#saving:hover{
+}
+
+
+	</style>
+
+</head>
+<body>
+
+	<div id="space"></div>
+	<div id="everyday">
+	</div>
+	<div id="could">
+	</div>
+	<div id="move">
+	</div>
+	<div id="money">
+	</div>
+	<div id="saving">
+	</div>
+	<div id="player">
+	</div>
+
+	<audio id="ev" src="everyday.mp3"></audio>
+	<audio id="csh" src="cash.mp3"></audio>
+	<audio id="mv" src="move.mp3"></audio>
+	<audio id="cld" src="could.mp3"></audio>
+	<audio id="sv" src="saving.mp3"></audio>
+
+	<script type="text/javascript">
+		let flip = true
+
+could.addEventListener("click", function(){	
+
+if (flip==true)
+	{
+		cld.play()
+		could.style.transform="rotate(36000deg)"
+		could.style.transition="600s"
+		flip=false
+	}
+ else if(flip==false){
+	ev.pause()
+	cld.pause()
+	mv.pause()
+	csh.pause()
+	sv.pause()
+		could.style.transform="rotate(0deg)"
+		could.style.transition="0s"
+		could.style.zIndex="-10"
+	flip=true
+}
+})
+everyday.addEventListener("click", function(){	
+
+	if (flip==true)
+	{
+		ev.play()
+		everyday.style.transform="rotate(36000deg)"
+		everyday.style.transition="600s"
+		flip=false
+	}
+ else if(flip==false){
+	ev.pause()
+	cld.pause()
+	mv.pause()
+	csh.pause()
+	sv.pause()
+		everyday.style.transform="rotate(0deg)"
+		everyday.style.transition="0s"
+		everyday.style.zIndex="-20"
+	flip=true
+}
+})
+move.addEventListener("click", function(){	
+
+	if (flip==true)
+	{
+		mv.play()
+		move.style.transform="rotate(36000deg)"
+		move.style.transition="600s"
+		flip=false
+	}
+ else if(flip==false){
+	ev.pause()
+	cld.pause()
+	mv.pause()
+	csh.pause()
+	sv.pause()
+		move.style.transform="rotate(0deg)"
+		move.style.transition="0s"
+		move.style.zIndex="-20"
+	flip=true
+}
+})
+money.addEventListener("click", function(){	
+
+	if (flip==true)
+	{
+		csh.play()
+		money.style.transform="rotate(36000deg)"
+		money.style.transition="600s"
+		flip=false
+	}
+ else if(flip==false){
+	ev.pause()
+	cld.pause()
+	mv.pause()
+	csh.pause()
+	sv.pause()
+		money.style.transform="rotate(0deg)"
+		money.style.transition="0s"
+		money.style.zIndex="-20"
+	flip=true
+}
+})
+saving.addEventListener("click", function(){	
+
+	if (flip==true)
+	{
+		sv.play()
+		saving.style.transform="rotate(36000deg)"
+		saving.style.transition="600s"
+		flip=false
+	}
+ else if(flip==false){
+	ev.pause()
+	cld.pause()
+	mv.pause()
+	csh.pause()
+	sv.pause()
+		saving.style.transform="rotate(0deg)"
+		saving.style.transition="0s"
+		saving.style.zIndex="-20"
+	flip=true
+}
+})
+
+</script>
+</body>
+</html>

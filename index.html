@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title></title>
+
+
+<style type="text/css">
+#eq{
+
+	font-size: 1.5vw;
+	text-align: center;
+	width: 60%;
+	height: 7.5%;
+}
+#eqhz{
+	font-size: .75vw;
+	width: 65%;
+	height: 7.5%;
+}
+.s1{
+	direction: rtl;
+	top: 50%;
+	left: 20%;
+	writing-mode: vertical-lr;
+	margin: 0.6vw;
+	accent-color: darkgray;
+	 -webkit-appearance: none;
+	 appearance: none;  
+	 cursor: pointer;     
+	 background: lightgrey;
+	 border-radius: 10%;
+	 width: 5%;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 35px; 
+  height: 50px; 
+ 
+  background: darkgray; 
+  border: 1px solid darkgray; 
+
+  margin-top: -8px;
+}
+.cont{
+	width: 100%;
+	height: 100%;
+}
+#bcont{
+	margin-top: 100px;
+	display: inline-block;
+	width:30%;
+	height: 300px;
+	background-color:red;
+	position: relative;
+	vertical-align: middle;
+}
+.hzspace {
+  display: inline-block; 
+  width: 3%;
+   background: transparent; 
+}
+#header{
+height: 10%;
+width: 100%;
+}
+.pages{
+	display: inline-block;
+	width: 30%;
+	height: 8%;
+
+	text-align: center;
+	font-size: 5vw;
+	color: black;
+}
+#home:hover{
+
+background-color: turquoise ;
+font-size: 6vw;
+border-radius: 10%;
+	transition-duration: 1s;
+
+}
+#journal:hover{
+
+background-color: turquoise ;
+font-size: 6vw;
+border-radius: 10%;
+	transition-duration: 1s;
+
+}
+#projects:hover{
+
+background-color: turquoise ;
+font-size: 6vw;
+border-radius: 10%;
+	transition-duration: 1s;
+
+}
+#pad{
+	margin-top: 100px;
+	margin-left: 65px;
+	width: 300px;
+	height: 300px;
+	background-color: gray;
+	display: inline-block;
+	vertical-align: middle;
+}
+.L1{
+	margin-top: 10px;
+	margin-left: 10px;
+	height: 85px;
+	width: 85px;
+	display: inline-block;
+	border-radius: 10%;
+}
+.L2{
+	margin-top: 10px;
+	margin-left: 10px;
+	height: 85px;
+	width: 85px;
+	display: inline-block;
+	border-radius: 10%;
+}
+.L3{
+	margin-top: 10px;
+	margin-left: 10px;
+	height: 85px;
+	width: 85px;
+	display: inline-block;
+	border-radius: 10%;
+}
+#one{
+	animation-name: cone;
+	animation-duration: 5s;
+animation-iteration-count: infinite;
+}
+#two{
+	animation-name: ctwo;
+	animation-duration: 5s;
+animation-iteration-count: infinite;
+}
+#three{
+	animation-name: cthree;
+	animation-duration: 5s;
+animation-iteration-count: infinite;
+}
+#four{
+	animation-name: cfour;
+	animation-duration: 5s;
+animation-iteration-count: infinite;
+}
+#five{
+	animation-name: cfive;
+	animation-duration: 5s;
+animation-iteration-count: infinite;
+}
+#six{
+	animation-name: csix;
+	animation-duration: 5s;
+animation-iteration-count: infinite;
+}
+#seven{
+	animation-name: cseven;
+	animation-duration: 5s;
+animation-iteration-count: infinite;
+}
+#eight{
+	animation-name: ceight;
+	animation-duration: 5s;
+animation-iteration-count: infinite;
+}
+#nine{
+	animation-name: cnine;
+	animation-duration: 5s;
+animation-iteration-count: infinite;
+}
+#one:hover{
+background-color: white;
+transition: .1s;
+}
+#two:hover{
+background-color: white;
+transition: .1s;
+}
+#three:hover{
+background-color: white;
+transition: .1s;
+}
+#four:hover{
+background-color: white;
+transition: .1s;
+}
+#five:hover{
+background-color: white;
+transition: .1s;
+}
+#six:hover{
+background-color: white;
+transition: .1s;
+}
+#seven:hover{
+background-color: white;
+transition: .1s;
+}
+#eight:hover{
+background-color: white;
+transition: .1s;
+}
+#nine:hover{
+background-color: white;
+transition: .1s;
+}
+@keyframes cone{
+	0%{
+		background-color: red;
+	}
+	20%{
+		background-color: orange;
+	}
+	40%{
+		background-color: hotpink;
+	}
+	60%{
+		background-color: turquoise;
+	}
+	80%{
+		background-color: yellow;
+	}
+	100%{
+		background-color: orange;
+	}
+}
+@keyframes ctwo{
+	0%{
+		background-color: hotpink;
+	}
+	20%{
+		background-color: turquoise;
+	}
+	40%{
+		background-color: orange;
+	}
+	60%{
+		background-color: yellow;
+	}
+	80%{
+		background-color: red;
+	}
+	100%{
+		background-color: turquoise;
+	}
+}
+@keyframes ctrhee{
+	0%{
+		background-color: turquoise;
+	}
+	20%{
+		background-color: yellow;
+	}
+	40%{
+		background-color: red;
+	}
+	60%{
+		background-color: orange;
+	}
+	80%{
+		background-color: hotpink;
+	}
+	100%{
+		background-color: yellow;
+	}
+}
+
+@keyframes cthree{
+	0%{
+		background-color: yellow;
+	}
+	20%{
+		background-color: red;
+	}
+	40%{
+		background-color: hotpink;
+	}
+	60%{
+		background-color: red;
+	}
+	80%{
+		background-color: orange;
+	}
+	100%{
+		background-color: hotpink;
+	}
+}
+@keyframes cfour{
+	0%{
+		background-color: hotpink;
+	}
+	20%{
+		background-color: turquoise;
+	}
+	40%{
+		background-color: orange;
+	}
+	60%{
+		background-color: yellow;
+	}
+	80%{
+		background-color: hotpink;
+	}
+	100%{
+		background-color: red;
+	}
+}
+@keyframes cfive{
+	0%{
+		background-color: red;
+	}
+	20%{
+		background-color: orange;
+	}
+	40%{
+		background-color: yellow;
+	}
+	60%{
+		background-color: turquoise;
+	}
+	80%{
+		background-color: hotpink;
+	}
+	100%{
+		background-color: red;
+	}
+}
+@keyframes csix{
+	0%{
+		background-color: turquoise;
+	}
+	20%{
+		background-color: yellow;
+	}
+	40%{
+		background-color: red;
+	}
+	60%{
+		background-color: hotpink;
+	}
+	80%{
+		background-color: orange;
+	}
+	100%{
+		background-color: orange;
+	}
+}
+@keyframes cseven{
+	0%{
+		background-color: red;
+	}
+	20%{
+		background-color: hotpink;
+	}
+	40%{
+		background-color: orange;
+	}
+	60%{
+		background-color: turquoise;
+	}
+	80%{
+		background-color: red;
+	}
+	100%{
+		background-color: hotpink;
+	}
+}
+@keyframes ceight{
+	0%{
+		background-color: turquoise;
+	}
+	20%{
+		background-color: yellow;
+	}
+	40%{
+		background-color: red;
+	}
+	60%{
+		background-color: hotpink;
+	}
+	80%{
+		background-color: orange;
+	}
+	100%{
+		background-color: orange;
+	}
+}
+@keyframes cnine{
+	0%{
+		background-color: orange;
+	}
+	20%{
+		background-color: red;
+	}
+	40%{
+		background-color: yellow;
+	}
+	60%{
+		background-color: orange;
+	}
+	80%{
+		background-color: hotpink;
+	}
+	100%{
+		background-color: turquoise;
+	}
+}
+</style>
+</head>
+
+
+
+
+<body>
+<div id="header">
+	<a class="pages" id="home" href="index.html">Home</a>
+	<a class="pages" id="journal" href="journal.html">Journal</a>
+	<a class="pages" id="projects" href="projects.html">Projects</a>
+</div>
+
+
+<div id="bcont">
+<div id="eq">EQUALIZER</div>
+<div id="eqhz"> <span class="hzspace"></span> 60Hz    <span class="hzspace"></span> 150Hz  <span class="hzspace"></span>   400Hz  <span class="hzspace"></span>   1KHz  <span class="hzspace"></span>   2.4KHz  <span class="hzspace"></span>    15KHz</div>
+<div class="cont">
+<input type="range" class="s1"></input>
+<input type="range" class="s1"></input>
+<input type="range" class="s1"></input>
+<input type="range" class="s1"></input>
+<input type="range" class="s1"></input>
+<input type="range" class="s1"></input>
+</div>
+</div>
+<div id="pad">
+	<div id="one" class="L1"></div>
+	<div id="two" class="L1"></div>
+	<div id="three" class="L1"></div>
+	<div id="four" class="L2"></div>
+	<div id="five" class="L2"></div>
+	<div id="six" class="L2"></div>
+	<div id="seven" class="L3"></div>
+	<div id="eight" class="L3"></div>
+	<div id="nine" class="L3"></div>
+
+</div>
+<iframe id="music" src="music.html" 
+        width=100% 
+        height="600" 
+        style="border:none; display:block; margin:auto; border-radius:12px;">
+</iframe>
+</body>
+</html>
