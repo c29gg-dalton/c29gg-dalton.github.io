@@ -1,0 +1,50 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title></title>
+    <style type="text/css">
+    
+
+    #dad {
+        height: 500px;
+        width: 500px;
+        background-image: url(ben.jpeg);
+        background-size: cover;
+        background-repeat: no-repeat;
+    }
+
+.hearts{
+    margin-top: 50px;
+    width:50px;
+    height:50px;
+    background-color:deeppink;
+    background-image:url(hat.png);
+    background-size:contain;
+    background-repeat: no-repeat;
+    display: inline-block;
+}
+
+    </style>
+</head>
+
+<body>
+    <center>
+    <div id="dad"></div>
+</center>
+</body>
+
+<script type="text/javascript">
+
+    dad.addEventListener("click", function(){
+        let boxes = document.createElement("div")
+     boxes.classList.add("hearts")
+
+        dad.appendChild(boxes)
+
+    })
+    
+</script>
+
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title></title>
+	<style>
+		#gif{
+			width: 125px;
+			height: 200px;
+					position: absolute;
+			background-image: url(https://supawork.ai/examples/gif-batch-page/animated-gif/animation-images/gifs/demo1.gif);
+			background-size: cover;
+			background-repeat: no-repeat;
+
+		}
+		 #backButton {
+
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        background-color: red;
+        border-radius: 50%;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+		justify-content: center;
+		align-items: center;
+		display: flex;
+      }
+
+      #backButton:hover {
+        background-color: darkred;
+      }
+	</style>
+</head>
+<body>
+	<a id="backButton" href="projects.html">Back</a>
+<div id="gif"></div>
+<script type="text/javascript">
+	gif.style.left=("0px")
+	document.addEventListener("keypress", function(){
+		console.log("hi")
+		gif.style.left = parseInt(gif.style.left) +5 +"px"
+		if (gif.style.left<=("1000px")) {
+			gif.style.left=("0px")
+		}
+
+	})
+</script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>p5.js Sketch with Back Button</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+
+      #backButton {
+
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        background-color: red;
+        border-radius: 50%;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+		justify-content: center;
+		align-items: center;
+		display: flex;
+      }
+
+      #backButton:hover {
+        background-color: darkred;
+      }
+    </style>
+  </head>
+  <body>
+<a id="backButton" href="projects.html">Back</a>
+
+    <script>
+      let s, s1, s2, s3, s4, s5;
+      let x = 1;
+      let y = 1;
+      let x1 = 0;
+      let y1 = 0;
+      let x2 = 0;
+      let y2 = 0;
+      let m = 0;
+      let c = 0.01;
+      let p = 90;
+      let paused = false;
+
+      function setup() {
+        createCanvas(windowWidth, windowHeight);
+        s = cos(HALF_PI) * 130;
+        s1 = sin(HALF_PI) * 130;
+        s2 = cos(HALF_PI + m) * 130;
+        s3 = sin(HALF_PI + m) * 130;
+        s4 = cos(HALF_PI + m) * 130;
+        s5 = sin(HALF_PI + m) * 130;
+      }
+
+      function draw() {
+        translate(windowWidth / 2, windowHeight / 2);
+        if (!paused) {
+          background(255);
+          strokeWeight(1);
+          stroke(0);
+
+          s = cos(HALF_PI + m) * 130;
+          s1 = sin(HALF_PI + m) * 130;
+
+          strokeWeight(1);
+          stroke(0);
+          for (let i = 0; i < 360; i += 3) {
+            line(x2, y2, x1, y1);
+            x1 = sin(x + i) * 150;
+            y1 = cos(y + i) * 150;
+            x2 = sin(x + i) * 110;
+            y2 = cos(y + i) * 110;
+          }
+
+          if (c === 0.01) {
+            fill(255, 255, 0, 100);
+            triangle(
+              cos(HALF_PI + m + 0.25) * 105,
+              sin(HALF_PI + m + 0.25) * 105,
+              cos(HALF_PI + m) * 130,
+              sin(HALF_PI + m) * 130,
+              cos(HALF_PI + m + 0.25) * 150,
+              sin(HALF_PI + m + 0.25) * 150
+            );
+
+            stroke(0, 60);
+            strokeWeight(30);
+            line(
+              cos(HALF_PI + m) * 130,
+              sin(HALF_PI + m) * 130,
+              cos(HALF_PI + m - 0.5) * 170,
+              sin(HALF_PI + m - 0.5) * 170
+            );
+          }
+
+          if (c === -0.01) {
+            fill(255, 255, 0, 100);
+            triangle(
+              cos(m - 0.25) * 105,
+              sin(m - 0.25) * 105,
+              cos(m) * 130,
+              sin(m) * 130,
+              cos(m - 0.25) * 150,
+              sin(m - 0.25) * 150
+            );
+
+            stroke(0, 60);
+            strokeWeight(30);
+            line(
+              cos(m) * 130,
+              sin(m) * 130,
+              cos(m + 0.5) * 170,
+              sin(m + 0.5) * 170
+            );
+          }
+
+          strokeWeight(1);
+          stroke(0);
+          noFill();
+          circle(0, 0, 240);
+          circle(0, 0, 270);
+
+          strokeWeight(40);
+          stroke(100);
+          arc(0, 0, 255, 255, 0 + m, HALF_PI + m);
+          m += c;
+
+          strokeWeight(1);
+          stroke(255);
+          line(cos(m) * 150, sin(m) * 150, cos(m) * 100, sin(m) * 100);
+          line(cos(1 + m) * 150, sin(1 + m) * 150, cos(1 + m) * 100, sin(1 + m) * 100);
+          line(cos(0.5 + m) * 150, sin(0.5 + m) * 150, cos(0.5 + m) * 100, sin(0.5 + m) * 100);
+          line(cos(1.5 + m) * 100, sin(1.5 + m) * 100, cos(1.5 + m) * 150, sin(1.5 + m) * 150);
+
+          strokeWeight(5);
+          stroke(100);
+          arc(0, 0, 255, 255, 0 + m, HALF_PI + m);
+        } else {
+          if (p < 100) {
+            strokeWeight(1);
+            stroke(0);
+            fill(0);
+            circle(cos(1.25 + m) * p, sin(1.25 + m) * p, 10);
+            circle(cos(0.75 + m) * p, sin(0.75 + m) * p, 10);
+            circle(cos(0.25 + m) * p, sin(0.25 + m) * p, 10);
+            p += 0.5;
+          } else {
+            background(255);
+            strokeWeight(1);
+            stroke(0);
+            noFill();
+            circle(0, 0, 240);
+            circle(0, 0, 270);
+            for (let i = 0; i < 360; i += 3) {
+              line(x2, y2, x1, y1);
+              x1 = sin(x + i) * 150;
+              y1 = cos(y + i) * 150;
+              x2 = sin(x + i) * 110;
+              y2 = cos(y + i) * 110;
+            }
+
+            strokeWeight(40);
+            noFill();
+            stroke(100);
+            arc(0, 0, 255, 255, 0 + m, HALF_PI + m);
+
+            stroke(255);
+            strokeWeight(1);
+            line(cos(m) * 150, sin(m) * 150, cos(m) * 100, sin(m) * 100);
+            line(cos(1 + m) * 150, sin(1 + m) * 150, cos(1 + m) * 100, sin(1 + m) * 100);
+            line(cos(0.5 + m) * 150, sin(0.5 + m) * 150, cos(0.5 + m) * 100, sin(0.5 + m) * 100);
+            line(cos(1.5 + m) * 100, sin(1.5 + m) * 100, cos(1.5 + m) * 150, sin(1.5 + m) * 150);
+
+            strokeWeight(5);
+            stroke(100);
+            arc(0, 0, 255, 255, 0 + m, HALF_PI + m);
+          }
+        }
+      }
+
+      function mousePressed() {
+        if (!paused) {
+          c = -1 * c;
+          paused = true;
+        } else {
+          paused = false;
+          p = 90;
+        }
+      }
+
+      function windowResized() {
+        resizeCanvas(windowWidth, windowHeight);
+      }
+    </script>
+  </body>
+</html>
