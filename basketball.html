@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title></title>
+	<style>
+		#bball{
+			height: 150px;
+			width: 150px;
+			background-image: url("basketball.png");;
+			background-repeat: no-repeat;
+			background-size: cover;
+			position: absolute;
+		}
+	</style>
+</head>
+<body>
+<div id="bball"></div>
+<script type="text/javascript">
+	let x = 0
+	let y = 0
+	document.addEventListener("mousemove", function(event){
+		bball.style.left=event.clientX + "px"
+		bball.style.top=event.clientY + "px"
+		// console.log(event)
+	})
+
+	function spin (){
+				x+=y
+		bball.style.transform="rotate(" + x + "deg)"
+		console.log(x)
+		console.log(y)
+
+
+	}
+
+
+	document.addEventListener("mousedown", function(event){
+		y=1
+		setInterval(spin, 100)
+
+		console.log(x)
+		console.log(y)
+
+
+	})
+
+		document.addEventListener("mouseup", function(event){
+		y=0
+		x=0
+		console.log(x)
+		console.log(y)
+
+	})
+</script>
+</body>
+</html>
