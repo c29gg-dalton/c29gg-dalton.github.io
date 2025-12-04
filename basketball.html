@@ -13,17 +13,27 @@
 			background-size: cover;
 			position: absolute;
 		}
+		#lebron{
+      		width: 50px;
+      		height: 50px;
+      		border: 1px solid black;
+      		font-size: 40px;
+   	    }
 	</style>
 </head>
 <body>
 <div id="bball"></div>
+
+<center>
+<div>you level of lebron is...</div>
+	<div id="lebron"></div></center>
 <script type="text/javascript">
 	let x = 0
 	let y = 0
+	let bron = 0
 	document.addEventListener("mousemove", function(event){
 		bball.style.left=event.clientX + "px"
 		bball.style.top=event.clientY + "px"
-		// console.log(event)
 	})
 
 	function spin (){
@@ -39,9 +49,10 @@
 	document.addEventListener("mousedown", function(event){
 		y=1
 		setInterval(spin, 100)
-
+		bron++
 		console.log(x)
 		console.log(y)
+		lebron.innerText=bron
 
 
 	})
@@ -51,8 +62,11 @@
 		x=0
 		console.log(x)
 		console.log(y)
-
+		if (bron % 10 === 0) {
+			alert("get off the game")
+		}
 	})
+		
 </script>
 </body>
 </html>
