@@ -41,7 +41,27 @@
 #six   { top: 76px; left: 245px; }
 #seven { top: 76px; left: 280px; }
 #eight { top: 76px; left: 315px; }
+#backButton {
 
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        background-color: red;
+        border-radius: 50%;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+      }
+
+      #backButton:hover {
+        background-color: darkred;
+      }
 
 
   </style>
@@ -49,6 +69,7 @@
 
 <body>
 <center>
+      <a id="backButton" href="projects.html">Back</a>
   <div id="container">
     <div id="hanukiah"></div>
     <div class="light" id="shamash"></div>
