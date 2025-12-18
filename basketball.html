@@ -19,9 +19,14 @@
       		border: 1px solid black;
       		font-size: 40px;
    	    }
+
 	</style>
 </head>
 <body>
+		<a id="backButton" href="projects.html">Back</a>
+<div id="gif"></div>
+
+
 <div id="bball"></div>
 
 <center>
@@ -66,7 +71,15 @@
 			alert("get off the game")
 		}
 	})
+	gif.style.left=("0px")
+	document.addEventListener("keypress", function(){
+		console.log("hi")
+		gif.style.left = parseInt(gif.style.left) +5 +"px"
+		if (gif.style.left<=("1000px")) {
+			gif.style.left=("0px")
+		}
 		
+	})
 </script>
 </body>
 </html>
