@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style>
+		.confetti{
+
+		}
+	</style>
+</head>
+<body>
+	<script>
+
+let start=1
+let d=0
+		function conf() {
+		let s = document.createElement("div")
+		let l= Math.random()*100
+		let t= Math.random()*1
+		let r= Math.random()*255
+		let g= Math.random()*255
+		let b= Math.random()*255
+		let rotato= Math.random()*360
+			s.style.width=30 +"px"
+			s.style.height=10 +"px"
+			s.style.left=l+"%"
+			s.style.top=t+"%"
+			s.style.backgroundColor="rgb("+r+","+g+","+b+")"
+			s.style.position="absolute"
+			s.style.transform= "rotate("+rotato+"deg)"
+			document.body.appendChild(s)
+			s.classList.add("confetti")
+		function fall(){
+			let ff = 1
+			s.style.top = parseInt(s.style.top) + ff + "px"
+		}
+		setInterval(fall,20)
+
+		}
+		setInterval(conf,5)
+
+	</script>
+</body>
+</html>

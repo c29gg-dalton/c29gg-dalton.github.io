@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	#club{
+		background-image: url(images.jpeg);
+		width: 100px;
+		height: 100px;
+		background-size: cover;
+		position: absolute;
+	}
+	#ball{
+		background-image: url(ball.png);
+		width: 45px;
+		height: 45px;
+		background-size: contain;
+		border-radius: 50%;
+		position: absolute;
+		top: 100px;
+		left: 100px;
+	}
+	#green{
+		top:500px;
+		height: 200px;
+		width: 200px;
+		border-radius: 50%;
+	}
+	#body{
+		background-color: darkgreen;
+	}
+</style>
+</head>
+<body>
+<div id="club"></div>
+<div id="ball"></div>
+
+
+<center>
+
+<div>strokes:</div>
+<div id="hits">0</div>
+<div id="green"></div>
+</center>
+<script type="text/javascript">
+	let stroke=0
+	document.addEventListener("mousemove", function(event){
+			club.style.left=event.clientX-50+"px"
+			club.style.top=event.clientY-50+"px"
+
+
+	})
+		function move(){
+			ball.style.left=(Math.random()*1000)-22.5+"px"
+			ball.style.top=(Math.random()*500)-22.5+"px"
+
+		}
+		
+
+		ball.addEventListener("mouseenter", function(event){
+			move()
+			stroke++
+			hits.innerText=stroke
+		})
+
+</script>
+
+</body>
+</html>

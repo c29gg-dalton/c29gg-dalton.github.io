@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial; }
+    .container { 
+    	display: flex; 
+    }
+    .player { 
+    	width: 45%; 
+    	font-size: 28px; 
+    	border: 2px solid black; 
+    	padding: 10px; 
+    }
+
+    .space{
+    	width:10px;
+    	height:10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <div class="player" id="p1">Player 1 draws:<br></div>
+
+    <div class="player" id="p2">Player 2 draws:<br></div>
+  </div>
+<center>
+  <div id="click">Click anywhere to draw</div>
+</center>
+  <script type="text/javascript">
+
+  	function makeDivp1 (){
+  		let spacer = document.createElement("div")
+  		p1.appendChild(spacer)
+  		spacer.classList.add("space")
+  	}
+
+  	function makeDivp2 (){
+  		let spacer = document.createElement("div")
+  		p2.appendChild(spacer)
+  		spacer.classList.add("space")
+  	}
+    let turn = 1;
+    
+    document.addEventListener("click", function(){
+      let num = Math.floor(Math.random() * 10) + 1;
+
+      if (turn == 1) {
+        document.getElementById("p1").innerHTML += num;
+          makeDivp1()
+
+
+        turn = 2;
+      } else {
+        document.getElementById("p2").innerHTML += num;
+            makeDivp2()
+
+        turn = 1;
+      }
+  })
+  </script>
+
+</body>
+</html>
