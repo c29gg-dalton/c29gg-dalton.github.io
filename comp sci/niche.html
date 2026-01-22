@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title></title>
+<style type="text/css">
+	#lemon{
+	top:50%;
+	left: 50%;
+	width: 200px;
+    height: 200px;
+    background-image: url(niche_lemon.jpeg);
+   	background-size: cover;
+    background-repeat: no-repeat;
+    border-radius: 70%;
+    position: absolute; 
+    animation-name: lemon;
+	animation-duration: 5s;
+	animation-iteration-count: 10000;
+	}
+	@keyframes lemon{
+		 0% {
+        transform: translate(-50%, -50%) translateX(600px) rotate(0deg);
+      }
+      25% {
+        transform: translate(-50%, -50%) translateY(300px) rotate(90deg);
+      }
+      50% {
+        transform: translate(-50%, -50%) translateX(-600px) rotate(180deg);
+      }
+      75% {
+        transform: translate(-50%, -50%) translateY(-300px) rotate(270deg);
+      }
+      100% {
+      	transform: translate(-50%, -50%) translateX(600px) rotate(360deg);
+      }
+
+
+	}
+		#apple{
+	top: 50%;
+	left:50%;
+	width: 400px;
+    height: 400px;
+    background-image: url(apple.png);
+   	background-size: contain;
+    background-repeat: no-repeat;
+    position: absolute; 
+    animation-name: apple;
+	animation-duration: 5s;
+	animation-iteration-count: 10000;
+	}
+	@keyframes apple{
+		 0%   { transform: translate(-50%, -50%) translateY(-300px) rotate(0deg); }
+  25%  { transform: translate(-50%, -50%) translateX(600px) rotate(90deg); } 
+  50%  { transform: translate(-50%, -50%) translateY(300px) rotate(180deg); }
+  75%  { transform: translate(-50%, -50%) translateX(-600px) rotate(270deg); }
+  100% { transform: translate(-50%, -50%) translateY(-300px) rotate(360deg); } 
+}
+#coconut{
+	top: 50%;
+	left:50%;
+	width: 200px;
+    height: 200px;
+    background-image: url(coco.png);
+   	background-size: contain;
+    background-repeat: no-repeat;
+    position: absolute; 
+    animation-name: coco;
+	animation-duration: 5s;
+	animation-iteration-count: 10000;
+	}
+	@keyframes coco{
+		 0%   { transform: translate(-50%, -50%) translateY(300px) rotate(0deg); }
+  25%  { transform: translate(-50%, -50%) translateX(-600px) rotate(90deg); } 
+  50%  { transform: translate(-50%, -50%) translateY(-300px) rotate(180deg); }
+  75%  { transform: translate(-50%, -50%) translateX(600px) rotate(270deg); }
+  100% { transform: translate(-50%, -50%) translateY(300px) rotate(360deg); } 
+}
+      
+	  video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%); /* centers it perfectly */
+      width: 600px; /* optional size */
+      height: auto;
+    }
+</style>
+</head>
+<body>
+<div id="lemon"></div>
+<div id="apple"></div>
+<div id="coconut"></div>
+<video  controls src="eating.mp4"></video>
+
+
+</body>
+</html>

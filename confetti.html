@@ -3,7 +3,29 @@
 <head>
 	<style>
 		.confetti{
+			animation-name: swing;
+			animation-duration: 1s;
+			animation-iteration-count: infinite;
+			animation-timing-function: ease-in-out;
+			animation-direction: alternate;
+			animation-timing-function: linear;
 
+		}
+		@keyframes swing{
+			from{
+				transform: rotate(var(--startRot));
+			}
+			to{
+				transform: rotate(var(--endRot));
+			}
+		}
+		@keyframes threed{
+			from{
+				transform: rotateY(180);
+			}
+			to{
+				transform: rotateY(-180);
+			}
 		}
 	</style>
 </head>
@@ -20,6 +42,10 @@ let d=0
 		let g= Math.random()*255
 		let b= Math.random()*255
 		let rotato= Math.random()*360
+		let startRot = Math.random() * -365 + "deg"
+		let endRot = Math.random() * 365 + "deg"
+		let yeRot = Math.random() * -180 + "deg"
+		let ysRot = Math.random() * 180 + "deg"
 			s.style.width=30 +"px"
 			s.style.height=10 +"px"
 			s.style.left=l+"%"
@@ -29,6 +55,8 @@ let d=0
 			s.style.transform= "rotate("+rotato+"deg)"
 			document.body.appendChild(s)
 			s.classList.add("confetti")
+			s.style.setProperty("--startRot", startRot)
+			s.style.setProperty("--endRot", endRot)
 		function fall(){
 			let ff = 1
 			s.style.top = parseInt(s.style.top) + ff + "px"
