@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Drift Line Runner</title>
+  <style>
+    html,body{margin:0;height:100%;background:#070a0c;overflow:hidden}
+    canvas{display:block;width:100vw;height:100vh}
+    .hud{
+      position:fixed;left:10px;top:10px;z-index:2;
+      color:#bff;font:14px/1.25 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      text-shadow:0 0 10px rgba(120,255,255,.2);
+      user-select:none;pointer-events:none
+    }
+    .hint{color:#7aa;font-size:12px;margin-top:6px}
+    .shop{
+      position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.55);z-index:3;color:#bff;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      user-select:none
+    }
+    .shop.open{display:flex}
+    .panel{
+      width:min(640px,calc(100vw - 24px));
+      background:rgba(6,12,14,.92);
+      border:1px solid rgba(180,255,255,.25);
+      border-radius:16px;
+      box-shadow:0 0 22px rgba(120,255,255,.12);
+      padding:14px 14px 12px
+    }
+    .row{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+    .title{font-size:18px;font-weight:800}
+    .sub{color:#7aa;font-size:12px}
+    .grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
+    .item{
+      display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+      border:1px solid rgba(180,255,255,.18);
+      border-radius:12px;padding:10px
+    }
+    .item h4{margin:0 0 4px;font-size:14px}
+    .item p{margin:0;color:#7aa;font-size:12px}
+    button{
+      background:rgba(160,255,255,.12);color:#bff;
+      border:1px solid rgba(180,255,255,.28);
+      border-radius:10px;padding:8px 10px;cursor:pointer;
+      font:13px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace
+    }
+    button:disabled{opacity:.45;cursor:not-allowed}
+    .kbd{padding:2px 6px;border:1px solid rgba(180,255,255,.18);border-radius:8px;color:#bff}
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div class="hud">
+    <div id="l1"></div>
+    <div id="l2"></div>
+    <div class="hint">
+      Controls: ↑/W accelerate • ↓/S brake • ←/→ steer • Space handbrake • <span class="kbd">U</span> shop • R restart
+    </div>
+  </div>
+
+  <div class="shop" id="shop">
+    <div class="panel">
+      <div class="row">
+        <div>
+          <div class="title">Garage</div>
+          <div class="sub">Buy colors/styles with your drift money</div>
+        </div>
+        <div class="sub" id="moneyLine"></div>
+      </div>
+      <div class="grid" id="shopGrid"></div>
+      <div class="row" style="margin-top:10px">
+        <div class="sub">Close: <span class="kbd">U</span> / <span class="kbd">Esc</span></div>
+        <div class="sub">Crash resets the level, money stays.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ---------- Canvas / DPI ----------
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  function resize() {
+    const dpr = Math.max(1, Math.min(2, devicePixelRatio || 1));
+    canvas.width = Math.floor(innerWidth * dpr);
+    canvas.height = Math.floor(innerHeight * dpr);
+    canvas.style.width = innerWidth + "px";
+    canvas.style.height = innerHeight + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener("resize", resize);
+  resize();
+
+  // ---------- Math / helpers ----------
+  const TAU = Math.PI * 2;
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp = (a,b,t)=>a+(b-a)*t;
+  const len = (x,y)=>Math.hypot(x,y);
+  const normAng = (a)=>{
+    while (a> Math.PI) a -= TAU;
+    while (a<-Math.PI) a += TAU;
+    return a;
+  };
+  const dot = (ax,ay,bx,by)=>ax*bx+ay*by;
+
+  function nearestOnSegment(px,py, ax,ay, bx,by){
+    const abx = bx-ax, aby = by-ay;
+    const apx = px-ax, apy = py-ay;
+    const ab2 = abx*abx + aby*aby || 1e-9;
+    let t = (apx*abx + apy*aby)/ab2;
+    t = clamp(t,0,1);
+    const x = ax + abx*t, y = ay + aby*t;
+    const dx = px-x, dy = py-y;
+    return {x,y,t, d: Math.hypot(dx,dy), dx,dy};
+  }
+
+  // ---------- Input ----------
+  const keys = new Set();
+  let shopOpen = false;
+  addEventListener("keydown",(e)=>{
+    const k = e.code;
+    if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(k)) e.preventDefault();
+
+    if (k === "KeyU") { toggleShop(); return; }
+    if (k === "Escape" && shopOpen) { toggleShop(false); return; }
+    if (!shopOpen) {
+      keys.add(k);
+      if (k === "KeyR") fullRestart();
+    }
+  },{passive:false});
+  addEventListener("keyup",(e)=>keys.delete(e.code));
+
+  function toggleShop(force){
+    shopOpen = (typeof force==="boolean") ? force : !shopOpen;
+    document.getElementById("shop").classList.toggle("open", shopOpen);
+    if (shopOpen) { keys.clear(); renderShop(); }
+  }
+
+  // ---------- Level / Track ----------
+  // Track is defined by a centerline polyline + constant half-width.
+  // You score for drifting near the centerline ("drift line").
+  const TRACK_HALF = 82;
+
+  function makeLevel(){
+    const w = innerWidth, h = innerHeight;
+    const cx = w*0.18, cy = h*0.75;
+
+    // A curvy, looping-ish course that fits most screens.
+    const pts = [
+      {x: cx,           y: cy},
+      {x: w*0.38,       y: h*0.78},
+      {x: w*0.55,       y: h*0.64},
+      {x: w*0.62,       y: h*0.42},
+      {x: w*0.48,       y: h*0.28},
+      {x: w*0.30,       y: h*0.26},
+      {x: w*0.20,       y: h*0.40},
+      {x: w*0.28,       y: h*0.56},
+      {x: w*0.46,       y: h*0.54},
+      {x: w*0.70,       y: h*0.56},
+      {x: w*0.82,       y: h*0.36},
+      {x: w*0.70,       y: h*0.18},
+      {x: w*0.48,       y: h*0.16},
+      {x: w*0.28,       y: h*0.18},
+      {x: w*0.14,       y: h*0.30},
+      {x: w*0.12,       y: h*0.52},
+      {x: w*0.18,       y: h*0.70},
+      {x: cx,           y: cy}, // loop back near start
+    ];
+    return pts;
+  }
+
+  let center = makeLevel();
+  function rebuildLevel(){
+    center = makeLevel();
+    precompute();
+    resetLevel(); // crash-like reset; money stays
+  }
+
+  // Precompute segment lengths and cumulative s so we can measure progress
+  let segLen = [], segCum = [], totalLen = 1;
+  function precompute(){
+    segLen = [];
+    segCum = [0];
+    let acc = 0;
+    for (let i=0;i<center.length-1;i++){
+      const a=center[i], b=center[i+1];
+      const L = Math.hypot(b.x-a.x, b.y-a.y);
+      segLen.push(L);
+      acc += L;
+      segCum.push(acc);
+    }
+    totalLen = acc || 1;
+  }
+  precompute();
+
+  // Find nearest segment to (x,y)
+  function nearestOnCenter(x,y){
+    let best = {d:1e9, idx:0, x:0,y:0,t:0, s:0, tx:1,ty:0};
+    for (let i=0;i<center.length-1;i++){
+      const a=center[i], b=center[i+1];
+      const hit = nearestOnSegment(x,y,a.x,a.y,b.x,b.y);
+      if (hit.d < best.d){
+        const L = segLen[i] || 1e-9;
+        const tx = (b.x-a.x)/L, ty = (b.y-a.y)/L;
+        const s = segCum[i] + L*hit.t;
+        best = {...hit, idx:i, s, tx, ty};
+      }
+    }
+    return best;
+  }
+
+  // ---------- Car / Game state ----------
+  const car = {
+    x: 0, y: 0,
+    vx: 0, vy: 0,
+    a: 0, // heading radians
+  };
+
+  // Cosmetics
+  const cosmetics = {
+    color: "#52f6ff",
+    style: "coupe", // coupe | wedge | truck
+  };
+
+  // Economy + scoring
+  let money = 0;
+  let runPoints = 0;      // points this attempt (resets on crash)
+  let totalPoints = 0;    // lifetime points (money is based on this too, but money is separate)
+  let progressS = 0;      // 0..totalLen along centerline
+  let crashedFlash = 0;
+
+  // Difficulty scaling (speed increases as you get farther in the level)
+  const BASE_MAX = 280;     // px/s
+  const EXTRA_MAX = 240;    // added by end of level
+  const BASE_ACCEL = 520;   // forward accel
+  const BASE_STEER = 2.5;   // rad/s at low speed
+  const DRAG = 0.16;        // base drag
+  const GRIP = 7.0;         // lateral grip strength (higher = less drift)
+  const DRIFT_GRIP = 3.1;   // when handbrake, reduce grip
+
+  // Scoring config
+  const LINE_SIGMA = 38;       // how tight you need to be to the drift line
+  const MIN_SLIP = 0.25;       // rad (~14°) to count as drifting
+  const OPT_SLIP = 0.70;       // rad (~40°) sweet spot
+  const MAX_SLIP = 1.25;       // rad (~72°) beyond this penalize
+  const CASH_PER_1000 = 1.0;   // money conversion scale
+
+  // Shop items
+  const SHOP = [
+    { type:"color", id:"cyan", name:"Color: Neon Cyan", cost: 120, apply:()=> cosmetics.color="#52f6ff" },
+    { type:"color", id:"magenta", name:"Color: Magenta", cost: 180, apply:()=> cosmetics.color="#ff55ff" },
+    { type:"color", id:"lime", name:"Color: Lime", cost: 220, apply:()=> cosmetics.color="#69ff6a" },
+    { type:"color", id:"gold", name:"Color: Gold", cost: 320, apply:()=> cosmetics.color="#ffd36a" },
+    { type:"style", id:"coupe", name:"Style: Coupe", cost: 0, apply:()=> cosmetics.style="coupe" },
+    { type:"style", id:"wedge", name:"Style: Wedge", cost: 260, apply:()=> cosmetics.style="wedge" },
+    { type:"style", id:"truck", name:"Style: Truck", cost: 340, apply:()=> cosmetics.style="truck" },
+  ];
+  const owned = new Set(["cyan","coupe"]); // defaults owned
+
+  function renderShop(){
+    document.getElementById("moneyLine").textContent = `MONEY: ${Math.floor(money)}   •   OWNED: ${owned.size}`;
+    const grid = document.getElementById("shopGrid");
+    grid.innerHTML = "";
+
+    for (const item of SHOP){
+      const isOwned = owned.has(item.id);
+      const canBuy = !isOwned && money >= item.cost;
+
+      const row = document.createElement("div");
+      row.className = "item";
+
+      const left = document.createElement("div");
+      const h = document.createElement("h4");
+      h.textContent = `${item.name} — ${item.cost} $`;
+      const p = document.createElement("p");
+      p.textContent = isOwned ? "Owned (click Equip)" : "Not owned";
+      left.appendChild(h);
+      left.appendChild(p);
+
+      const right = document.createElement("div");
+      const b = document.createElement("button");
+      if (isOwned) {
+        b.textContent = "Equip";
+        b.onclick = () => { item.apply(); renderShop(); };
+      } else {
+        b.textContent = canBuy ? "Buy" : "Need more";
+        b.disabled = !canBuy;
+        b.onclick = () => {
+          if (money < item.cost) return;
+          money -= item.cost;
+          owned.add(item.id);
+          item.apply();
+          renderShop();
+        };
+      }
+      right.appendChild(b);
+
+      row.appendChild(left);
+      row.appendChild(right);
+      grid.appendChild(row);
+    }
+  }
+
+  function resetLevel(){
+    // spawn at start of centerline with heading along first segment
+    const a = center[0], b = center[1];
+    const dx = b.x-a.x, dy = b.y-a.y;
+    car.x = a.x; car.y = a.y;
+    car.vx = 0; car.vy = 0;
+    car.a = Math.atan2(dy, dx);
+
+    runPoints = 0;
+    progressS = 0;
+    crashedFlash = 0.35;
+  }
+
+  function fullRestart(){
+    money = 0;
+    totalPoints = 0;
+    owned.clear(); owned.add("cyan"); owned.add("coupe");
+    cosmetics.color = "#52f6ff";
+    cosmetics.style = "coupe";
+    rebuildLevel();
+  }
+
+  resetLevel();
+
+  // rebuild level on resize for better fit
+  let lastW = innerWidth, lastH = innerHeight;
+  function maybeRebuild(){
+    if (Math.abs(innerWidth-lastW) + Math.abs(innerHeight-lastH) > 10){
+      lastW = innerWidth; lastH = innerHeight;
+      rebuildLevel();
+    }
+  }
+
+  // ---------- Main loop ----------
+  let lastT = performance.now();
+  function loop(t){
+    const dt = clamp((t-lastT)/1000, 0, 0.033);
+    lastT = t;
+
+    maybeRebuild();
+    if (!shopOpen) update(dt);
+    render(dt);
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  function update(dt){
+    // HUD
+    document.getElementById("l1").textContent =
+      `MONEY $${Math.floor(money)}  •  RUN ${Math.floor(runPoints)}  •  TOTAL ${Math.floor(totalPoints)}  •  ${(Math.floor((progressS/totalLen)*100))}%`;
+    document.getElementById("l2").textContent =
+      `Tip: Drift (Space) and stay close to the line for max points. Crash resets progress.`;
+
+    crashedFlash = Math.max(0, crashedFlash - dt);
+
+    // progress / speed scaling based on nearest point on centerline
+    const near = nearestOnCenter(car.x, car.y);
+    progressS = Math.max(progressS, near.s);
+    const prog01 = clamp(progressS / totalLen, 0, 1);
+
+    const maxSpeed = BASE_MAX + EXTRA_MAX * prog01; // faster the further you get
+    const accel = BASE_ACCEL * (1.0 + 0.25*prog01);
+
+    // controls
+    const up = keys.has("ArrowUp") || keys.has("KeyW");
+    const dn = keys.has("ArrowDown") || keys.has("KeyS");
+    const left = keys.has("ArrowLeft") || keys.has("KeyA");
+    const right = keys.has("ArrowRight") || keys.has("KeyD");
+    const hand = keys.has("Space");
+
+    // forward vector
+    const fx = Math.cos(car.a), fy = Math.sin(car.a);
+
+    // steering gets weaker at high speed (more stable)
+    const speed = Math.hypot(car.vx, car.vy);
+    const steer = BASE_STEER * (1.0 - 0.55*clamp(speed/maxSpeed,0,1));
+
+    if (left)  car.a -= steer * dt;
+    if (right) car.a += steer * dt;
+
+    // throttle/brake
+    if (up) {
+      car.vx += fx * accel * dt;
+      car.vy += fy * accel * dt;
+    }
+    if (dn) {
+      car.vx -= fx * (accel*0.65) * dt;
+      car.vy -= fy * (accel*0.65) * dt;
+    }
+
+    // physics: split velocity into forward + lateral relative to car heading,
+    // then damp lateral more (grip), less grip when handbrake => drift.
+    const fwd = dot(car.vx, car.vy, fx, fy);
+    const lx = -fy, ly = fx;
+    const lat = dot(car.vx, car.vy, lx, ly);
+
+    const grip = hand ? DRIFT_GRIP : GRIP;
+
+    // reduce lateral velocity toward 0 (simulates tire grip)
+    const latAfter = lat * Math.exp(-grip * dt);
+
+    // general drag
+    const drag = Math.exp(-DRAG * (1 + 0.6*clamp(speed/maxSpeed,0,1)) * dt);
+    const fwdAfter = fwd * drag;
+
+    // reconstruct world velocity
+    car.vx = fx*fwdAfter + lx*latAfter;
+    car.vy = fy*fwdAfter + ly*latAfter;
+
+    // clamp to max speed (soft)
+    const sp = Math.hypot(car.vx, car.vy);
+    if (sp > maxSpeed) {
+      const s = maxSpeed / sp;
+      car.vx *= s; car.vy *= s;
+    }
+
+    // integrate
+    car.x += car.vx * dt;
+    car.y += car.vy * dt;
+
+    // collision with "walls": if distance from centerline > track half-width => crash reset
+    const off = nearestOnCenter(car.x, car.y).d;
+    if (off > TRACK_HALF) {
+      // crash: keep money
+      resetLevel();
+      return;
+    }
+
+    // scoring: only while "drifting" (handbrake or slip angle), and close to drift line
+    // slip angle = angle between velocity direction and heading
+    const velAng = Math.atan2(car.vy, car.vx);
+    const slip = Math.abs(normAng(velAng - car.a));
+
+    const near2 = nearestOnCenter(car.x, car.y);
+    const dLine = near2.d;
+
+    const lineQuality = Math.exp(-(dLine*dLine) / (LINE_SIGMA*LINE_SIGMA)); // 0..1
+    const driftGate = (hand || slip > MIN_SLIP) ? 1 : 0;
+
+    // slip quality peaks near OPT_SLIP, drops if too small or too huge
+    let slipQ = 0;
+    if (slip >= MIN_SLIP) {
+      if (slip <= OPT_SLIP) slipQ = (slip - MIN_SLIP) / (OPT_SLIP - MIN_SLIP);
+      else slipQ = 1 - clamp((slip - OPT_SLIP) / (MAX_SLIP - OPT_SLIP), 0, 1);
+      slipQ = clamp(slipQ, 0, 1);
+    }
+
+    // progress factor: reward later sections slightly more
+    const progQ = 0.6 + 0.9*prog01;
+
+    // points per second
+    const ptsPerSec = 220 * lineQuality * slipQ * driftGate * progQ;
+
+    runPoints += ptsPerSec * dt;
+    totalPoints += ptsPerSec * dt;
+
+    // money conversion (continuous)
+    money += (ptsPerSec * dt) * (CASH_PER_1000/1000);
+
+    // finish condition: reach end of centerline
+    if (progressS >= totalLen * 0.985) {
+      // bonus for finish, then restart level faster (same scaling applies automatically)
+      const bonus = 250 + 350*prog01;
+      runPoints += bonus;
+      totalPoints += bonus;
+      money += bonus * (CASH_PER_1000/1000);
+      resetLevel();
+    }
+  }
+
+  function drawTrack(){
+    // road fill
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    // outer road (thick)
+    ctx.strokeStyle = "rgba(120,255,255,0.12)";
+    ctx.lineWidth = TRACK_HALF*2;
+    ctx.beginPath();
+    ctx.moveTo(center[0].x, center[0].y);
+    for (let i=1;i<center.length;i++) ctx.lineTo(center[i].x, center[i].y);
+    ctx.stroke();
+
+    // walls edges
+    ctx.strokeStyle = "rgba(170,255,255,0.38)";
+    ctx.lineWidth = 2;
+    // Draw two offset polylines (approx) by shifting along normals per segment
+    for (const side of [-1, +1]){
+      ctx.beginPath();
+      for (let i=0;i<center.length-1;i++){
+        const a=center[i], b=center[i+1];
+        const dx=b.x-a.x, dy=b.y-a.y;
+        const L=Math.hypot(dx,dy)||1;
+        const nx=-dy/L, ny=dx/L;
+        const ox=nx*TRACK_HALF*side, oy=ny*TRACK_HALF*side;
+        if (i===0) ctx.moveTo(a.x+ox, a.y+oy);
+        ctx.lineTo(b.x+ox, b.y+oy);
+      }
+      ctx.stroke();
+    }
+
+    // drift line (centerline) dotted
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([10, 10]);
+    ctx.beginPath();
+    ctx.moveTo(center[0].x, center[0].y);
+    for (let i=1;i<center.length;i++) ctx.lineTo(center[i].x, center[i].y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // start marker
+    ctx.fillStyle = "rgba(255,255,255,0.8)";
+    ctx.beginPath();
+    ctx.arc(center[0].x, center[0].y, 5, 0, TAU);
+    ctx.fill();
+  }
+
+  function drawCar(){
+    ctx.save();
+    ctx.translate(car.x, car.y);
+    ctx.rotate(car.a);
+
+    // shadow
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = "#000";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 18, 10, 0, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    const color = cosmetics.color;
+
+    if (cosmetics.style === "coupe"){
+      // body
+      ctx.fillStyle = color;
+      ctx.strokeStyle = "rgba(0,0,0,0.45)";
+      ctx.lineWidth = 2;
+      roundRect(ctx, -18, -10, 36, 20, 8);
+      ctx.fill(); ctx.stroke();
+
+      // windshield
+      ctx.fillStyle = "rgba(255,255,255,0.22)";
+      roundRect(ctx, -6, -7, 14, 8, 4);
+      ctx.fill();
+
+      // wheels
+      ctx.fillStyle = "rgba(0,0,0,0.7)";
+      ctx.fillRect(-14,-12,10,4);
+      ctx.fillRect(4,-12,10,4);
+      ctx.fillRect(-14,8,10,4);
+      ctx.fillRect(4,8,10,4);
+    }
+
+    if (cosmetics.style === "wedge"){
+      ctx.fillStyle = color;
+      ctx.strokeStyle = "rgba(0,0,0,0.45)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(20,0);
+      ctx.lineTo(-16,-11);
+      ctx.lineTo(-20,0);
+      ctx.lineTo(-16,11);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.beginPath();
+      ctx.moveTo(10,0);
+      ctx.lineTo(-2,-6);
+      ctx.lineTo(-6,0);
+      ctx.lineTo(-2,6);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    if (cosmetics.style === "truck"){
+      ctx.fillStyle = color;
+      ctx.strokeStyle = "rgba(0,0,0,0.45)";
+      ctx.lineWidth = 2;
+      // cab
+      roundRect(ctx, -14, -10, 26, 20, 6);
+      ctx.fill(); ctx.stroke();
+      // bed
+      ctx.fillStyle = lerpColor(color, "#0b1114", 0.25);
+      roundRect(ctx, 2, -9, 18, 18, 5);
+      ctx.fill(); ctx.stroke();
+      // wheels
+      ctx.fillStyle = "rgba(0,0,0,0.7)";
+      ctx.fillRect(-12,-12,10,4);
+      ctx.fillRect(6,-12,10,4);
+      ctx.fillRect(-12,8,10,4);
+      ctx.fillRect(6,8,10,4);
+    }
+
+    // direction indicator
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(10,0); ctx.lineTo(18,0);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function roundRect(ctx,x,y,w,h,r){
+    r = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  function lerpColor(hexA, hexB, t){
+    // expects "#rrggbb"
+    const a = hexA.slice(1), b = hexB.slice(1);
+    const ar=parseInt(a.slice(0,2),16), ag=parseInt(a.slice(2,4),16), ab=parseInt(a.slice(4,6),16);
+    const br=parseInt(b.slice(0,2),16), bg=parseInt(b.slice(2,4),16), bb=parseInt(b.slice(4,6),16);
+    const rr = Math.round(lerp(ar,br,t));
+    const rg = Math.round(lerp(ag,bg,t));
+    const rb = Math.round(lerp(ab,bb,t));
+    return "#" + rr.toString(16).padStart(2,"0") + rg.toString(16).padStart(2,"0") + rb.toString(16).padStart(2,"0");
+  }
+
+  function render(dt){
+    // background
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+
+    // faint vignette
+    const g = ctx.createRadialGradient(innerWidth*0.5, innerHeight*0.5, 50, innerWidth*0.5, innerHeight*0.5, Math.max(innerWidth,innerHeight));
+    g.addColorStop(0,"rgba(12,18,20,0)");
+    g.addColorStop(1,"rgba(0,0,0,0.55)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,innerWidth,innerHeight);
+
+    // stars
+    ctx.globalAlpha = 0.20;
+    ctx.fillStyle = "#bff";
+    for (let i=0;i<60;i++){
+      const x = (i*157 % innerWidth);
+      const y = (i*241 % innerHeight);
+      ctx.fillRect(x, y, 1, 1);
+    }
+    ctx.globalAlpha = 1;
+
+    drawTrack();
+
+    // crash flash
+    if (crashedFlash > 0){
+      ctx.globalAlpha = 0.12 + 0.25*crashedFlash;
+      ctx.fillStyle = "#ff5566";
+      ctx.fillRect(0,0,innerWidth,innerHeight);
+      ctx.globalAlpha = 1;
+    }
+
+    drawCar();
+
+    // progress bar
+    const prog = clamp(progressS/totalLen, 0, 1);
+    const barW = Math.min(420, innerWidth-20);
+    const x = 10, y = innerHeight - 18;
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = "rgba(120,255,255,0.15)";
+    ctx.fillRect(x, y, barW, 8);
+    ctx.fillStyle = "rgba(180,255,255,0.6)";
+    ctx.fillRect(x, y, barW*prog, 8);
+    ctx.globalAlpha = 1;
+
+    // if shop open, dim
+    if (shopOpen){
+      ctx.globalAlpha = 0.14;
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0,0,innerWidth,innerHeight);
+      ctx.globalAlpha = 1;
+    }
+  }
+})();
+</script>
+</body>
+</html>

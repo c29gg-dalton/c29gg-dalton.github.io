@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Asteroids + Upgrades</title>
+  <style>
+    html, body { margin:0; height:100%; background:#000; overflow:hidden; }
+    canvas { display:block; width:100vw; height:100vh; }
+    .hud {
+      position: fixed; inset: 0 auto auto 0;
+      padding: 10px 12px; color: #9ff; font: 14px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      user-select: none; pointer-events: none;
+      text-shadow: 0 0 8px rgba(120,255,255,.35);
+      z-index: 2;
+    }
+    .hint { color:#7aa; font-size:12px; margin-top:6px; }
+
+    .shop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.55);
+      z-index: 3;
+      user-select: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #9ff;
+    }
+    .shop.open { display: flex; }
+    .panel {
+      width: min(560px, calc(100vw - 24px));
+      border: 1px solid rgba(160,255,255,.35);
+      box-shadow: 0 0 18px rgba(100,255,255,.12);
+      border-radius: 14px;
+      padding: 14px;
+      background: rgba(0,10,12,0.88);
+      backdrop-filter: blur(6px);
+    }
+    .titleRow {
+      display:flex; justify-content: space-between; align-items: baseline; gap: 10px;
+      margin-bottom: 10px;
+    }
+    .title { font-size: 18px; font-weight: 700; }
+    .sub { color:#7aa; font-size: 12px; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .item {
+      border: 1px solid rgba(160,255,255,.25);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .item h4 { margin: 0 0 4px 0; font-size: 14px; }
+    .item p { margin: 0; font-size: 12px; color:#7aa; }
+    button {
+      background: rgba(140,255,255,.12);
+      color: #9ff;
+      border: 1px solid rgba(160,255,255,.35);
+      border-radius: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font: 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .footerRow {
+      margin-top: 12px;
+      display:flex; justify-content: space-between; align-items: center; gap: 10px;
+      color:#7aa; font-size: 12px;
+    }
+    .kbd { padding: 2px 6px; border: 1px solid rgba(160,255,255,.25); border-radius: 6px; color:#9ff; }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div class="hud" id="hud">
+    <div id="line1"></div>
+    <div id="line2"></div>
+    <div class="hint">
+      Controls: ←/→ rotate • ↑ thrust • Space shoot • Shift hyperspace • <span class="kbd">U</span> shop • R restart
+    </div>
+  </div>
+
+  <div class="shop" id="shop">
+    <div class="panel">
+      <div class="titleRow">
+        <div>
+          <div class="title">Ship Upgrade Shop</div>
+          <div class="sub">Spend credits from destroyed asteroids</div>
+        </div>
+        <div class="sub" id="shopCredits"></div>
+      </div>
+
+      <div class="grid" id="shopItems"></div>
+
+      <div class="footerRow">
+        <div>Tip: Big/Med/Small asteroids pay more as they get smaller.</div>
+        <div>Close: <span class="kbd">U</span> / <span class="kbd">Esc</span></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ---------- Canvas / DPI ----------
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  function resize() {
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    canvas.width = Math.floor(innerWidth * dpr);
+    canvas.height = Math.floor(innerHeight * dpr);
+    canvas.style.width = innerWidth + "px";
+    canvas.style.height = innerHeight + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener("resize", resize);
+  resize();
+
+  // ---------- Utilities ----------
+  const TAU = Math.PI * 2;
+  const rand = (a,b) => a + Math.random() * (b-a);
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const wrap = (o) => {
+    if (o.x < 0) o.x += innerWidth;
+    if (o.x >= innerWidth) o.x -= innerWidth;
+    if (o.y < 0) o.y += innerHeight;
+    if (o.y >= innerHeight) o.y -= innerHeight;
+  };
+  const dist2 = (ax,ay,bx,by) => {
+    const dx = ax-bx, dy = ay-by;
+    return dx*dx + dy*dy;
+  };
+
+  // ---------- Input ----------
+  const keys = new Set();
+  let shopOpen = false;
+
+  addEventListener("keydown", (e) => {
+    const k = e.code;
+    // Prevent page scroll for key controls
+    if (["ArrowUp","ArrowLeft","ArrowRight","Space"].includes(k)) e.preventDefault();
+
+    if (k === "KeyU") { toggleShop(); return; }
+    if (k === "Escape" && shopOpen) { toggleShop(false); return; }
+
+    if (!shopOpen) {
+      keys.add(k);
+      if (k === "KeyR") restart();
+    }
+  }, { passive:false });
+
+  addEventListener("keyup", (e) => keys.delete(e.code));
+
+  function toggleShop(force) {
+    shopOpen = typeof force === "boolean" ? force : !shopOpen;
+    const el = document.getElementById("shop");
+    el.classList.toggle("open", shopOpen);
+    if (shopOpen) {
+      keys.clear();
+      renderShop();
+    }
+  }
+
+  // ---------- Base constants ----------
+  const SHIP_RADIUS = 12;
+  const BASE_TURN = 3.6;        // rad/sec
+  const BASE_THRUST = 240;      // px/sec^2
+  const BASE_FRICTION = 0.65;   // velocity decay factor per second
+  const BASE_BULLET_SPEED = 520;
+  const BULLET_LIFE = 0.9;
+  const BASE_FIRE_COOLDOWN = 0.12;
+  const INVULN_TIME = 1.8;
+  const HYPER_COOLDOWN = 1.2;
+
+  // ---------- Upgrades (persist for run) ----------
+  const upgrades = {
+    thrustLv: 0,
+    turnLv: 0,
+    fireLv: 0,
+    bulletLv: 0,
+  };
+
+  function getStats() {
+    // Keep upgrades meaningful but not insane
+    const thrust = BASE_THRUST * (1 + 0.18 * upgrades.thrustLv);
+    const turn = BASE_TURN * (1 + 0.16 * upgrades.turnLv);
+    const bulletSpeed = BASE_BULLET_SPEED * (1 + 0.18 * upgrades.bulletLv);
+    const fireCooldown = BASE_FIRE_COOLDOWN * Math.pow(0.90, upgrades.fireLv); // faster shooting
+    return { thrust, turn, bulletSpeed, fireCooldown };
+  }
+
+  // ---------- Economy ----------
+  let credits = 0;
+  function payoutForSize(size) {
+    // smaller = higher reward
+    if (size === 3) return 10;   // big
+    if (size === 2) return 18;   // medium
+    return 30;                  // small
+  }
+
+  // ---------- State ----------
+  let ship, bullets, asteroids, particles;
+  let score = 0;
+  let lives = 3;
+  let level = 1;
+  let gameOver = false;
+  let fireTimer = 0;
+  let invuln = 0;
+  let hyperTimer = 0;
+
+  function makeShip() {
+    ship = {
+      x: innerWidth * 0.5,
+      y: innerHeight * 0.5,
+      vx: 0, vy: 0,
+      a: -Math.PI / 2,  // facing up
+      thrusting: false
+    };
+    invuln = INVULN_TIME;
+  }
+
+  function asteroidPoly(r) {
+    const verts = Math.floor(rand(9, 14));
+    const pts = [];
+    for (let i=0;i<verts;i++){
+      const ang = (i/verts)*TAU;
+      const jitter = rand(0.65, 1.25);
+      pts.push({ x: Math.cos(ang)*r*jitter, y: Math.sin(ang)*r*jitter });
+    }
+    return pts;
+  }
+
+  function spawnAsteroid(size, x=null, y=null, vx=null, vy=null) {
+    const r = size === 3 ? rand(48, 70) : size === 2 ? rand(28, 42) : rand(16, 24);
+    const obj = {
+      x: x ?? rand(0, innerWidth),
+      y: y ?? rand(0, innerHeight),
+      vx: vx ?? rand(-80, 80) * (1 + 0.08*level),
+      vy: vy ?? rand(-80, 80) * (1 + 0.08*level),
+      r,
+      size,            // 3 big, 2 med, 1 small
+      poly: asteroidPoly(r)
+    };
+    asteroids.push(obj);
+  }
+
+  function spawnWave() {
+    const count = 3 + Math.min(6, level);
+    asteroids.length = 0;
+
+    for (let i=0;i<count;i++){
+      let x,y;
+      for (let tries=0;tries<50;tries++){
+        x = rand(0, innerWidth);
+        y = rand(0, innerHeight);
+        if (dist2(x,y, ship.x, ship.y) > (220*220)) break;
+      }
+      spawnAsteroid(3, x, y);
+    }
+  }
+
+  function explode(x,y, amount=18, speed=220) {
+    for (let i=0;i<amount;i++){
+      const a = rand(0, TAU);
+      const s = rand(0.25, 1) * speed;
+      particles.push({
+        x, y,
+        vx: Math.cos(a)*s,
+        vy: Math.sin(a)*s,
+        life: rand(0.25, 0.75)
+      });
+    }
+  }
+
+  function splitAsteroid(a) {
+    if (a.size <= 1) return;
+    const childSize = a.size - 1;
+    const n = 2 + (Math.random() < 0.35 ? 1 : 0);
+    for (let i=0;i<n;i++){
+      const ang = rand(0, TAU);
+      const boost = rand(60, 120);
+      spawnAsteroid(
+        childSize,
+        a.x + Math.cos(ang)*8,
+        a.y + Math.sin(ang)*8,
+        a.vx + Math.cos(ang)*boost,
+        a.vy + Math.sin(ang)*boost
+      );
+    }
+  }
+
+  function loseLife() {
+    lives--;
+    explode(ship.x, ship.y, 28, 320);
+    if (lives <= 0) {
+      gameOver = true;
+      return;
+    }
+    makeShip();
+    ship.vx *= 0.25; ship.vy *= 0.25;
+  }
+
+  function restart() {
+    score = 0;
+    credits = 0;
+    lives = 3;
+    level = 1;
+    gameOver = false;
+    bullets = [];
+    asteroids = [];
+    particles = [];
+    fireTimer = 0;
+    hyperTimer = 0;
+
+    // reset upgrades
+    upgrades.thrustLv = 0;
+    upgrades.turnLv = 0;
+    upgrades.fireLv = 0;
+    upgrades.bulletLv = 0;
+
+    makeShip();
+    spawnWave();
+    if (shopOpen) renderShop();
+  }
+
+  // Init
+  bullets = [];
+  asteroids = [];
+  particles = [];
+  makeShip();
+  spawnWave();
+
+  // ---------- Shop UI ----------
+  const SHOP = [
+    {
+      key: "thrustLv",
+      name: "Thrust+",
+      desc: () => `Increase acceleration. Level ${upgrades.thrustLv}`,
+      cost: () => 40 + upgrades.thrustLv * 55,
+      buy: () => upgrades.thrustLv++,
+    },
+    {
+      key: "turnLv",
+      name: "Turn Speed+",
+      desc: () => `Rotate faster. Level ${upgrades.turnLv}`,
+      cost: () => 35 + upgrades.turnLv * 50,
+      buy: () => upgrades.turnLv++,
+    },
+    {
+      key: "fireLv",
+      name: "Fire Rate+",
+      desc: () => `Shoot faster (lower cooldown). Level ${upgrades.fireLv}`,
+      cost: () => 60 + upgrades.fireLv * 80,
+      buy: () => upgrades.fireLv++,
+    },
+    {
+      key: "bulletLv",
+      name: "Bullet Speed+",
+      desc: () => `Bullets travel faster. Level ${upgrades.bulletLv}`,
+      cost: () => 45 + upgrades.bulletLv * 60,
+      buy: () => upgrades.bulletLv++,
+    },
+    {
+      key: "life",
+      name: "Extra Life",
+      desc: () => `+1 life (max 8). Current ${lives}`,
+      cost: () => 120 + (Math.max(0, lives-3) * 90),
+      buy: () => { if (lives < 8) lives++; },
+      canBuy: () => lives < 8
+    }
+  ];
+
+  function renderShop() {
+    document.getElementById("shopCredits").textContent = `CREDITS: ${credits}`;
+    const wrapEl = document.getElementById("shopItems");
+    wrapEl.innerHTML = "";
+
+    for (const item of SHOP) {
+      const cost = item.cost();
+      const allowed = item.canBuy ? item.canBuy() : true;
+      const canAfford = credits >= cost;
+      const btnDisabled = !(allowed && canAfford);
+
+      const row = document.createElement("div");
+      row.className = "item";
+
+      const left = document.createElement("div");
+      const h = document.createElement("h4");
+      h.textContent = `${item.name} — ${cost} cr`;
+      const p = document.createElement("p");
+      p.textContent = item.desc();
+      left.appendChild(h);
+      left.appendChild(p);
+
+      const right = document.createElement("div");
+      const b = document.createElement("button");
+      b.textContent = btnDisabled ? (allowed ? "Not enough" : "Maxed") : "Buy";
+      b.disabled = btnDisabled;
+      b.onclick = () => {
+        if (credits < cost) return;
+        if (item.canBuy && !item.canBuy()) return;
+        credits -= cost;
+        item.buy();
+        renderShop();
+      };
+      right.appendChild(b);
+
+      row.appendChild(left);
+      row.appendChild(right);
+      wrapEl.appendChild(row);
+    }
+  }
+
+  // ---------- Main loop ----------
+  let last = performance.now();
+  function loop(now) {
+    const dt = clamp((now - last) / 1000, 0, 0.033);
+    last = now;
+
+    update(dt);
+    render();
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  function update(dt) {
+    const hud1 = document.getElementById("line1");
+    const hud2 = document.getElementById("line2");
+    const stats = getStats();
+
+    if (gameOver) {
+      hud1.textContent = `SCORE ${score}   •   CREDITS ${credits}   •   GAME OVER`;
+      hud2.textContent = `Press R to restart`;
+    } else {
+      hud1.textContent = `SCORE ${score}   •   LIVES ${lives}   •   LEVEL ${level}   •   CREDITS ${credits}`;
+      hud2.textContent = invuln > 0 ? `INVULNERABLE` : ``;
+    }
+
+    // timers
+    fireTimer = Math.max(0, fireTimer - dt);
+    invuln = Math.max(0, invuln - dt);
+    hyperTimer = Math.max(0, hyperTimer - dt);
+
+    // update particles
+    for (let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      wrap(p);
+      p.life -= dt;
+      p.vx *= Math.pow(0.2, dt);
+      p.vy *= Math.pow(0.2, dt);
+      if (p.life <= 0) particles.splice(i,1);
+    }
+
+    // update asteroids
+    for (const a of asteroids) {
+      a.x += a.vx * dt;
+      a.y += a.vy * dt;
+      wrap(a);
+    }
+
+    // freeze gameplay while shop is open
+    if (shopOpen) return;
+
+    if (!gameOver) {
+      // --- TURNING: Left = counter-clockwise, Right = clockwise (screen-relative "your left/right")
+      const left = keys.has("ArrowLeft") || keys.has("KeyA");
+      const right = keys.has("ArrowRight") || keys.has("KeyD");
+      const up = keys.has("ArrowUp") || keys.has("KeyW");
+
+      if (left) ship.a -= stats.turn * dt;   // CCW
+      if (right) ship.a += stats.turn * dt;  // CW
+
+      ship.thrusting = up;
+      if (up) {
+        ship.vx += Math.cos(ship.a) * stats.thrust * dt;
+        ship.vy += Math.sin(ship.a) * stats.thrust * dt;
+
+        if (Math.random() < 0.35) {
+          const back = ship.a + Math.PI + rand(-0.35, 0.35);
+          particles.push({
+            x: ship.x - Math.cos(ship.a)*SHIP_RADIUS*0.9,
+            y: ship.y - Math.sin(ship.a)*SHIP_RADIUS*0.9,
+            vx: ship.vx + Math.cos(back)*rand(80,160),
+            vy: ship.vy + Math.sin(back)*rand(80,160),
+            life: rand(0.12, 0.28)
+          });
+        }
+      }
+
+      // friction
+      const fr = Math.pow(1 - BASE_FRICTION, dt);
+      ship.vx *= fr;
+      ship.vy *= fr;
+
+      // move ship
+      ship.x += ship.vx * dt;
+      ship.y += ship.vy * dt;
+      wrap(ship);
+
+      // shoot
+      if (keys.has("Space") && fireTimer <= 0) {
+        fireTimer = stats.fireCooldown;
+        const bx = ship.x + Math.cos(ship.a) * (SHIP_RADIUS + 2);
+        const by = ship.y + Math.sin(ship.a) * (SHIP_RADIUS + 2);
+        bullets.push({
+          x: bx, y: by,
+          vx: ship.vx + Math.cos(ship.a) * stats.bulletSpeed,
+          vy: ship.vy + Math.sin(ship.a) * stats.bulletSpeed,
+          life: BULLET_LIFE
+        });
+      }
+
+      // hyperspace (Shift)
+      if ((keys.has("ShiftLeft") || keys.has("ShiftRight")) && hyperTimer <= 0) {
+        hyperTimer = HYPER_COOLDOWN;
+        let nx, ny;
+        for (let tries=0;tries<60;tries++){
+          nx = rand(0, innerWidth);
+          ny = rand(0, innerHeight);
+          let ok = true;
+          for (const a of asteroids){
+            if (dist2(nx,ny,a.x,a.y) < (a.r+90)*(a.r+90)) { ok=false; break; }
+          }
+          if (ok) break;
+        }
+        ship.x = nx; ship.y = ny;
+        ship.vx *= 0.5; ship.vy *= 0.5;
+        invuln = Math.max(invuln, 0.65);
+        explode(ship.x, ship.y, 14, 260);
+      }
+
+      // update bullets + collisions
+      for (let i=bullets.length-1;i>=0;i--){
+        const b = bullets[i];
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        wrap(b);
+        b.life -= dt;
+        if (b.life <= 0) { bullets.splice(i,1); continue; }
+
+        // bullet vs asteroid
+        for (let j=asteroids.length-1;j>=0;j--){
+          const a = asteroids[j];
+          if (dist2(b.x,b.y,a.x,a.y) <= a.r*a.r) {
+            bullets.splice(i,1);
+            asteroids.splice(j,1);
+
+            explode(a.x, a.y, 14 + a.size*6, 260);
+
+            // score + credits
+            score += (a.size === 3 ? 20 : a.size === 2 ? 50 : 100);
+            credits += payoutForSize(a.size);
+
+            splitAsteroid(a);
+            if (shopOpen) renderShop();
+            break;
+          }
+        }
+      }
+
+      // ship vs asteroid
+      if (invuln <= 0) {
+        for (const a of asteroids) {
+          const rr = a.r + SHIP_RADIUS;
+          if (dist2(ship.x, ship.y, a.x, a.y) <= rr*rr) {
+            loseLife();
+            break;
+          }
+        }
+      }
+
+      // next level
+      if (asteroids.length === 0) {
+        level++;
+        makeShip();
+        spawnWave();
+      }
+    } else {
+      // game over drift bullets out
+      for (let i=bullets.length-1;i>=0;i--){
+        const b = bullets[i];
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        wrap(b);
+        b.life -= dt;
+        if (b.life <= 0) bullets.splice(i,1);
+      }
+    }
+  }
+
+  function render() {
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+
+    // subtle stars
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = "#8ff";
+    for (let i=0;i<40;i++){
+      const x = (i*97 % innerWidth);
+      const y = (i*173 % innerHeight);
+      ctx.fillRect(x, y, 1, 1);
+    }
+    ctx.globalAlpha = 1;
+
+    // asteroids
+    ctx.strokeStyle = "#9ff";
+    ctx.lineWidth = 2;
+    for (const a of asteroids) {
+      ctx.beginPath();
+      const pts = a.poly;
+      ctx.moveTo(a.x + pts[0].x, a.y + pts[0].y);
+      for (let i=1;i<pts.length;i++){
+        ctx.lineTo(a.x + pts[i].x, a.y + pts[i].y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    // bullets
+    ctx.fillStyle = "#9ff";
+    for (const b of bullets) {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 2, 0, TAU);
+      ctx.fill();
+    }
+
+    // ship
+    if (!gameOver) {
+      const blink = invuln > 0 && (Math.floor(performance.now()/120) % 2 === 0);
+      if (!blink) {
+        ctx.save();
+        ctx.translate(ship.x, ship.y);
+        ctx.rotate(ship.a);
+
+        ctx.strokeStyle = "#9ff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(16, 0);
+        ctx.lineTo(-10, -9);
+        ctx.lineTo(-6, 0);
+        ctx.lineTo(-10, 9);
+        ctx.closePath();
+        ctx.stroke();
+
+        if (ship.thrusting && !shopOpen) {
+          ctx.beginPath();
+          ctx.moveTo(-10, -6);
+          ctx.lineTo(-18 - rand(0, 6), 0);
+          ctx.lineTo(-10, 6);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+    } else {
+      ctx.fillStyle = "#9ff";
+      ctx.font = "700 48px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+      ctx.textAlign = "center";
+      ctx.fillText("GAME OVER", innerWidth/2, innerHeight/2);
+      ctx.font = "16px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+      ctx.fillText("Press R to restart", innerWidth/2, innerHeight/2 + 34);
+      ctx.textAlign = "left";
+    }
+
+    // particles
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = "#9ff";
+    for (const p of particles) {
+      const a = clamp(p.life / 0.75, 0, 1);
+      ctx.globalAlpha = 0.9 * a;
+      ctx.fillRect(p.x, p.y, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+})();
+</script>
+</body>
+</html>
