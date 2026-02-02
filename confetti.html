@@ -19,21 +19,27 @@
 				transform: rotate(-180deg) rotateY(-90deg);
 			}
 		}
-		@keyframes threed{
-			from{
-				
-			}
-			to{
-				
-			}
+		#btn{
+			top:calc(50% - 50px);
+			left: calc(50% - 50px);
+			width: 100px;
+			height: 100px;
+			position: absolute;
+			background-color: red;
+			border-radius: 50%;
 		}
 	</style>
 </head>
 <body>
+	<button id="btn">drop confetti</button>
+	<input type="range" id="slider" name="number" min="0" max="100" value="1-">
 	<script>
 
 let start=1
 let d=0
+let n=5
+let button= document.getElementById("btn")
+let slider = document.getElementById("slider")
 		function conf() {
 		let s = document.createElement("div")
 		let l= Math.random()*100
@@ -64,7 +70,14 @@ let d=0
 		setInterval(fall,20)
 
 		}
-		setInterval(conf,5)
+		button.addEventListener("click",function(){
+		// 	for(let i = 0; i<slider.value; i++) {
+		// 		conf()
+		// 	}
+			setInterval(conf,5)
+		}
+		)
+		
 
 	</script>
 </body>
