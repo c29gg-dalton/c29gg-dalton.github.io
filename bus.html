@@ -48,27 +48,38 @@
   <button id="add-person">add person</button>
   <button id="pop-person">get rid of person</button>
 
-  <div id="train">
-    <div class="cart">august</div>
-    <div class="cart">gideon</div>
-    <div class="cart">faiz</div>
-  </div>
+  <div id="train"></div>
 
 <script>
-  let people = ["august", "gideon", "faiz"]
+  let people = []
   let apb = document.getElementById("add-person")
+  let c = document.createElement("div")
+  
   apb.addEventListener("click",function(){
     let personInput = document.getElementById("person")
     people.push(personInput.value)
     console.log(people)
     personInput.value = ""
+    makeTrain()
   })
     let ppb = document.getElementById("pop-person")
     ppb.addEventListener("click",function(){
     let personInput = document.getElementById("person")
     people.pop()
     console.log(people)
+        personInput.value = ""
+    makeTrain()
   })
+function makeTrain(){
+  train.innerHTML = ""
+ for (let i = 0; i < people.length; i++) {
+  let c = document.createElement("div")
+  c.classList.add("cart")
+   c.textContent= people[i]
+  train.appendChild(c)
+
+} 
+}
 
     
 </script>
