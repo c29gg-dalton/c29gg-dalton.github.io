@@ -45,6 +45,7 @@
 </head>
 <body>
   <input type="text" id="person">
+  <input type="color" id="cp">
   <button id="add-person">add person</button>
   <button id="pop-person">get rid of person</button>
 
@@ -54,15 +55,20 @@
   let people = []
   let apb = document.getElementById("add-person")
   let c = document.createElement("div")
-  
+  let cp = document.getElementById("cp")
   apb.addEventListener("click",function(){
     let personInput = document.getElementById("person")
-    people.push(personInput.value)
+    people.push({
+      name: personInput.value,
+      favcolor: cp.value
+  })
+
+    makeTrain()
     console.log(people)
     personInput.value = ""
-    makeTrain()
+    
   })
-    let ppb = document.getElementById("pop-person")
+  let ppb = document.getElementById("pop-person")
     ppb.addEventListener("click",function(){
     let personInput = document.getElementById("person")
     people.pop()
@@ -74,12 +80,17 @@ function makeTrain(){
   train.innerHTML = ""
  for (let i = 0; i < people.length; i++) {
   let c = document.createElement("div")
-  c.classList.add("cart")
-   c.textContent= people[i]
-  train.appendChild(c)
+   c.classList.add("cart")
+   c.textContent= people[i].name
+   c.style.backgroundColor = people[i].favcolor
+   train.appendChild(c)
 
-} 
+
+  } 
+
 }
+
+makeTrain()
 
     
 </script>
