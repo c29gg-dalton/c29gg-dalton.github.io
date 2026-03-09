@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Star Battle</title>
+
+<style>
+:root{
+  --bg:#0b1220;
+  --panel:#0f1a2e;
+  --text:#e7eefc;
+  --muted:#9fb2d9;
+  --gridline:rgba(231,238,252,.25);
+  --bad:#ff4d6d;
+  --ok:#31d07a;
+  --cellHover:rgba(255,255,255,.06);
+
+  --cell:44px;
+  --borderThin:1px;
+  --borderBold:3px;
+  --radius:14px;
+  --shadow:0 12px 30px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(1200px 800px at 20% 10%, #142a52 0%, var(--bg) 55%, #060a12 100%);
+  color:var(--text);
+  min-height:100svh;
+  display:flex;
+  justify-content:center;
+}
+
+.wrap{
+  width:min(1100px,100%);
+  padding:14px;
+  display:grid;
+  gap:14px;
+}
+
+header{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 14px;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 14px;
+  border-radius:var(--radius);
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:var(--shadow);
+}
+
+.controls{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+select,button{font:inherit}
+select{
+  background:rgba(255,255,255,.08);
+  color:var(--text);
+  border:1px solid rgba(255,255,255,.2);
+  border-radius:999px;
+  padding:6px 10px;
+}
+
+button{
+  background:rgba(255,255,255,.08);
+  color:var(--text);
+  border:1px solid rgba(255,255,255,.2);
+  border-radius:999px;
+  padding:8px 12px;
+  cursor:pointer;
+}
+button.primary{
+  background:rgba(49,208,122,.18);
+  border-color:rgba(49,208,122,.4);
+}
+
+.board{
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:var(--radius);
+  padding:14px;
+  display:grid;
+  gap:12px;
+  box-shadow:var(--shadow);
+}
+
+.topRow{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px;
+  align-items:center;
+  font-size:13px;
+  color:var(--muted);
+}
+
+.gridWrap{
+  display:flex;
+  justify-content:center;
+}
+
+.grid{
+  display:grid;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:10px;
+  overflow:hidden;
+  background:rgba(0,0,0,.2);
+}
+
+.cell{
+  width:var(--cell);
+  height:var(--cell);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:var(--borderThin) solid var(--gridline);
+  cursor:pointer;
+  font-size:calc(var(--cell)*.55);
+  background:rgba(255,255,255,.02);
+}
+.cell:hover{background:var(--cellHover)}
+
+.cell.star{color:#fff}
+.cell.dot{
+  font-size:calc(var(--cell)*.4);
+  color:#9fb2d9;
+}
+
+.cell.wrong{
+  outline:3px solid var(--bad);
+  outline-offset:-3px;
+}
+
+.cell.rbTop{border-top:var(--borderBold) solid #fff}
+.cell.rbLeft{border-left:var(--borderBold) solid #fff}
+.cell.rbRight{border-right:var(--borderBold) solid #fff}
+.cell.rbBottom{border-bottom:var(--borderBold) solid #fff}
+
+.msg{
+  font-size:14px;
+}
+.msg .ok{color:var(--ok);font-weight:600}
+.msg .bad{color:var(--bad);font-weight:600}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <div><strong>Star Battle</strong></div>
+    <div style="font-size:12px;color:var(--muted)">
+      Click: empty → dot → star → empty
+    </div>
+  </div>
+  <div class="controls">
+    <label>K:</label>
+    <select disabled>
+      <option selected>2</option>
+    </select>
+    <button id="checkBtn" class="primary">Check</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+</header>
+
+<div class="board">
+  <div class="topRow">
+    <div>Moves: <strong id="moves">0</strong></div>
+    <div>Time: <strong id="time">00:00</strong></div>
+  </div>
+  <div class="gridWrap">
+    <div id="grid" class="grid"></div>
+  </div>
+  <div id="msg" class="msg"></div>
+</div>
+
+</div>
+
+<script>
+/* =============================
+   SAMPLE PUZZLE (VALID K=2)
+   - Exactly 2 per row
+   - Exactly 2 per column
+   - Exactly 2 per region
+   - No stars touching (including diagonals)
+   ============================= */
+
+const SAMPLE = {
+  N: 8,
+  regions: [
+    [0,0,0,1,1,2,2,2],
+    [0,0,1,1,1,2,3,2],
+    [0,4,4,1,2,2,3,3],
+    [4,4,4,5,5,2,3,3],
+    [4,6,5,5,5,7,7,3],
+    [6,6,6,5,7,7,7,7],
+    [6,6,6,5,5,7,7,7],
+    [6,6,6,6,5,5,7,7],
+  ],
+
+  /* Verified valid non-touching solution */
+  solution: [
+    [1,0,0,0,1,0,0,0],
+    [0,0,1,0,0,0,1,0],
+    [0,1,0,0,0,1,0,0],
+    [0,0,0,1,0,0,0,1],
+    [1,0,0,0,1,0,0,0],
+    [0,0,1,0,0,0,1,0],
+    [0,1,0,0,0,1,0,0],
+    [0,0,0,1,0,0,0,1],
+  ]
+};
+
+/* =============================
+   STATE
+   ============================= */
+
+const CellState = { EMPTY:0, DOT:1, STAR:2 };
+
+let N = SAMPLE.N;
+let regions = SAMPLE.regions;
+let solution = SAMPLE.solution;
+
+let state = make2D(N,N,CellState.EMPTY);
+let moves = 0;
+let timer = null;
+let startTime = null;
+
+/* =============================
+   DOM
+   ============================= */
+
+const gridEl = document.getElementById("grid");
+const movesEl = document.getElementById("moves");
+const timeEl = document.getElementById("time");
+const msgEl = document.getElementById("msg");
+const checkBtn = document.getElementById("checkBtn");
+const resetBtn = document.getElementById("resetBtn");
+
+/* =============================
+   HELPERS
+   ============================= */
+
+function make2D(r,c,val){
+  return Array.from({length:r},()=>Array(c).fill(val));
+}
+
+function formatTime(ms){
+  const s=Math.floor(ms/1000);
+  return String(Math.floor(s/60)).padStart(2,"0")+":"+
+         String(s%60).padStart(2,"0");
+}
+
+function startTimer(){
+  if(timer) return;
+  startTime=Date.now();
+  timer=setInterval(()=>{
+    timeEl.textContent=formatTime(Date.now()-startTime);
+  },500);
+}
+
+function stopTimer(){
+  if(timer){clearInterval(timer);timer=null;}
+}
+
+function inBounds(r,c){
+  return r>=0&&r<N&&c>=0&&c<N;
+}
+
+function neighbors8(r,c){
+  const out=[];
+  for(let dr=-1;dr<=1;dr++){
+    for(let dc=-1;dc<=1;dc++){
+      if(dr===0&&dc===0) continue;
+      const rr=r+dr,cc=c+dc;
+      if(inBounds(rr,cc)) out.push([rr,cc]);
+    }
+  }
+  return out;
+}
+
+/* =============================
+   VALIDATE SOLUTION (NO TOUCHING)
+   ============================= */
+
+function solutionHasNoTouching(){
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      if(solution[r][c]===1){
+        for(const [rr,cc] of neighbors8(r,c)){
+          if(solution[rr][cc]===1) return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+/* =============================
+   BUILD GRID
+   ============================= */
+
+function buildGrid(){
+  gridEl.innerHTML="";
+  gridEl.style.gridTemplateColumns=`repeat(${N},var(--cell))`;
+  gridEl.style.gridTemplateRows=`repeat(${N},var(--cell))`;
+
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const cell=document.createElement("div");
+      cell.className="cell";
+      cell.dataset.r=r;
+      cell.dataset.c=c;
+
+      const reg=regions[r][c];
+      if(r===0||regions[r-1][c]!==reg) cell.classList.add("rbTop");
+      if(c===0||regions[r][c-1]!==reg) cell.classList.add("rbLeft");
+      if(r===N-1||regions[r+1][c]!==reg) cell.classList.add("rbBottom");
+      if(c===N-1||regions[r][c+1]!==reg) cell.classList.add("rbRight");
+
+      cell.addEventListener("click",handleClick);
+      gridEl.appendChild(cell);
+    }
+  }
+}
+
+/* =============================
+   RENDER
+   ============================= */
+
+function render(){
+  for(const cell of gridEl.children){
+    const r=+cell.dataset.r;
+    const c=+cell.dataset.c;
+    cell.classList.remove("star","dot","wrong");
+    cell.textContent="";
+    if(state[r][c]===CellState.DOT){
+      cell.classList.add("dot");
+      cell.textContent="•";
+    }
+    if(state[r][c]===CellState.STAR){
+      cell.classList.add("star");
+      cell.textContent="✦";
+    }
+  }
+  movesEl.textContent=moves;
+}
+
+/* =============================
+   CLICK
+   ============================= */
+
+function handleClick(){
+  startTimer();
+  const r=+this.dataset.r;
+  const c=+this.dataset.c;
+
+  state[r][c]=(state[r][c]+1)%3; // 0 → 1 → 2 → 0
+  moves++;
+  render();
+}
+
+/* =============================
+   CHECK
+   - Only check cells where player placed dot (1) or star (2)
+   - If EMPTY (0) → do not check
+   ============================= */
+
+function check(){
+
+  if(!solutionHasNoTouching()){
+    msgEl.innerHTML='<span class="bad">Error: built-in solution invalid (touching stars).</span>';
+    return;
+  }
+
+  let wrongCount=0;
+
+  for(const cell of gridEl.children){
+    const r=+cell.dataset.r;
+    const c=+cell.dataset.c;
+
+    const playerVal = state[r][c];
+    const shouldStar = solution[r][c]===1;
+
+    cell.classList.remove("wrong");
+
+    // Only check if player marked something (dot or star)
+    if(playerVal!==CellState.EMPTY){
+
+      if(playerVal===CellState.STAR && !shouldStar){
+        cell.classList.add("wrong");
+        wrongCount++;
+      }
+
+      if(playerVal===CellState.DOT && shouldStar){
+        cell.classList.add("wrong");
+        wrongCount++;
+      }
+    }
+  }
+
+  if(wrongCount===0){
+    msgEl.innerHTML='<span class="ok">All placed cells are correct so far.</span>';
+  }else{
+    msgEl.innerHTML='<span class="bad">'+wrongCount+' incorrect marked cell(s).</span>';
+  }
+}
+
+/* =============================
+   RESET
+   ============================= */
+
+function reset(){
+  state=make2D(N,N,CellState.EMPTY);
+  moves=0;
+  msgEl.textContent="";
+  stopTimer();
+  timeEl.textContent="00:00";
+  render();
+}
+
+/* =============================
+   INIT
+   ============================= */
+
+checkBtn.addEventListener("click",check);
+resetBtn.addEventListener("click",reset);
+
+buildGrid();
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title></title>
+<style>
+	#button{
+		width: 100px;
+		height: 100px;
+		position: absolute;
+		left: 50px;
+		top: 50px;
+		background-color: skyblue;
+		text-align: center;
+		border-radius: 50%;
+	}
+</style>
+</head>
+<body>
+<button id="button">click me!</button>
+<script>
+	let btn= document.getElementById("button")
+	console.log(btn)
+	btn.addEventListener("click",function(){
+		
+	})
+	btn.addEventListener("mouseover",function() {
+console.log("hovering")
+let x= Math.random()*100
+		let y= Math.random()*100
+		let r= Math.random()*255
+		let g= Math.random()*255
+		let b= Math.random()*255
+		console.log(x)
+		console.log(y)
+		 btn.style.left = x + "%"
+		 btn.style.top = y + "%"
+		 btn.style.backgroundColor="rgb("+r+","+g+","+b+")"
+	})
+	btn.addEventListener("mouseout",function() {
+console.log("out")
+	})
+</script>
+</body>
+</html>
