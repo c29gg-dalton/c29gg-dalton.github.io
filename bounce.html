@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title></title>
+	<script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.min.js"></script>
+</head>
+<body>
+ <script>
+ 	function setup() {
+  createCanvas(windowWidth, windowHeight);
+  rectMode(CENTER)
+  textAlign(CENTER)
+  screenW=windowWidth-41.5
+  screenH=windowHeight-32.5
+}
+x=35
+y=35
+xm=5
+ym=5
+r=255
+g=255
+b=255
+function draw() {
+  background(0);
+
+  fill(255)
+  rect(x,y-10,83,65)
+  fill(r, g, b)
+  textSize(50);
+text('dvd', x, y);
+
+  if(x >= screenW){
+    xm = -5
+    b = 0
+    g = 0
+    r = 255
+     }  
+  if(x <= 41.5){
+    xm = 5
+    b = 0
+    g = 255
+    r = 0
+     }  
+  if(y >= screenH){
+    ym = -5
+    b = 255
+    g = 0
+    r = 0
+     }  
+  if(y <= 40){
+    ym = 5
+    b = random (0,200)
+    g = random (0,200)
+    r = random (0,200)
+     }  
+  	x += xm
+    y += ym
+
+}
+ </script>
+</body>
+</html>
