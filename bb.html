@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple p5.js Project</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+    }
+  </style>
+</head>
+
+<body>
+
+<script>
+let x;
+let y;
+let sx = 4;
+let sy = 3;
+let r = 0;
+let g = 255;
+let b = 255;
+let blk = false;
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  x = width / 2;
+  y = height / 2;
+}
+
+function draw() {
+  background(0, 10);
+
+  noStroke();
+
+  if (blk == true) {
+    fill(0, 0, 0, 40);
+    circle(x, y, 120);
+
+    fill(0, 0, 0, 80);
+    circle(x, y, 80);
+
+    fill(0, 0, 0);
+    circle(x, y, 40);
+  } else {
+    fill(r, g, b, 40);
+    circle(x, y, 120);
+
+    fill(r, g, b, 80);
+    circle(x, y, 80);
+
+    fill(r, g, b);
+    circle(x, y, 40);
+  }
+
+  x = x + sx;
+  y = y + sy;
+
+  if (x > width - 60 || x < 60) {
+    sx = sx * -1;
+  }
+
+  if (y > height - 60 || y < 60) {
+    sy = sy * -1;
+  }
+}
+
+function mousePressed() {
+  if (blk == false) {
+    r = random(100, 255);
+    g = random(100, 255);
+    b = random(100, 255);
+  }
+}
+
+function keyPressed() {
+  if (key == " ") {
+    blk = !blk;
+  }
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
+</script>
+
+</body>
+</html>
